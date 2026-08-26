@@ -56,7 +56,9 @@ Ownership is scoped to the calling principal on every query, and a row belonging
 
 ## API
 
-Base path `/api/v1`. Ops endpoints (`/health`, `/health/db`) sit at the root.
+Base path `/api/v1`. Ops endpoints are `/health` and `/health/db` on the service
+itself; in production everything is served under one hostname, so the public
+base is `https://momentica.ferbotz.com/api` and health is at `/api/health`.
 
 ### Identity
 

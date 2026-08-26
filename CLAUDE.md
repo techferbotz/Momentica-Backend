@@ -1,6 +1,23 @@
 # Momentica Backend
 
-Backend for Momentica — a mobile-first app where users create personalized, interactive digital experiences (birthdays, invitations, proposals, greetings) and share them via `momentica.app/p/{id}`. Templates render on the frontend; this backend stores personalization data, serves public creation reads, and handles media, auth, and premium features.
+Backend for Momentica — a mobile-first app where users create personalized, interactive digital experiences (birthdays, invitations, proposals, greetings) and share them via `momentica.ferbotz.com/{shareCode}`. Templates render on the frontend; this backend stores personalization data, serves public creation reads, and handles media, auth, and paid publishing.
+
+## House of Apps protocols
+
+This project follows the shared HOA playbook in `G:\My Drive\HOA Protocols\`. Read
+`README.md` there first; it indexes the rest. The ones that bind this repo:
+
+- **00 — New project setup**: Drive folder, details doc, credentials registry, docs mirror, contract folder.
+- **02 — Claude ↔ AWS access**: security-group edits, IAM changes and public-bucket policies are **human-run**, never agent-run. Prepare the exact command and hand it over.
+- **03 — AWS infrastructure**: shared t3.micro, host Postgres (database + role per project), one `<project>-media` bucket, loopback-only container port, nginx vhost + certbot.
+- **04 — Tech stack & conventions**: the stack below is that protocol. Deviate only with a written reason.
+- **05 — Deployment runbook**: migrate **before** rebuilding the app, and always pass `--build` to the migrate service or it silently runs a stale image.
+
+### Deviations from protocol 04, and why
+
+- **No offline-first sync.** Creation is inherently online here (image upload, template fetch, payment), and a client-controlled `updatedAt` would break the sync watermark for no benefit. Protocol 04 scopes this to "where applicable".
+- **No `decimal.js` / `money.ts`.** The app stores no computed money — Play and RevenueCat own every amount. `Purchase.priceMinorUnits` is a `BigInt` recorded for reference and serialized as a string.
+- **One hostname, not one per service.** `momentica.ferbotz.com/api/*` is the API; `/` is reserved for the web renderer, which owns share links at `/{8-char code}`. Protocol 03's default is a whole subdomain per app.
 
 ## Language & Runtime
 

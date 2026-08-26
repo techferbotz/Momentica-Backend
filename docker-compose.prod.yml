@@ -15,7 +15,9 @@ services:
     environment:
       NODE_ENV: production
     ports:
-      - '127.0.0.1:3000:3000'
+      # Loopback only — nginx is the sole public entry point. The host port is
+      # parameterised because this box runs several apps side by side.
+      - '127.0.0.1:${HOST_PORT:-3000}:3000'
     extra_hosts:
       # Lets DATABASE_URL point at a Postgres running on the EC2 host itself.
       - 'host.docker.internal:host-gateway'

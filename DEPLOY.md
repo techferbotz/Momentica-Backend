@@ -56,12 +56,16 @@ Feature groups are all-or-nothing. Setting three of the five AWS keys stops the 
 Never on container start: two API containers coming up together would race, and a failed migration would take the service down with it.
 
 ```bash
-docker compose -f docker-compose.prod.yml build
-docker compose -f docker-compose.prod.yml run --rm migrate
-docker compose -f docker-compose.prod.yml up -d api
+# 1) migrate first, so the new columns exist before the app that expects them.
+#    --build is not optional: without it the migrate service can run a stale
+#    image and cheerfully report "No pending migrations" (HOA protocol 05).
+docker compose -f docker-compose.prod.yml run --rm --build migrate
+# 2) then rebuild and recreate the app, so its baked-in Prisma client matches.
+docker compose -f docker-compose.prod.yml up -d --build api
 ```
 
-Roll forward only. To undo, write a new migration.
+Migrate **before** rebuilding the app, never after. Roll forward only — to undo,
+write a new migration.
 
 ## 5. nginx and TLS
 
@@ -69,7 +73,7 @@ Roll forward only. To undo, write a new migration.
 sudo cp docker/nginx/momentica.conf /etc/nginx/sites-available/momentica
 sudo ln -s /etc/nginx/sites-available/momentica /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d api.momentica.ferbotz.com
+sudo certbot --nginx -d momentica.ferbotz.com
 ```
 
 Certbot installs its own renewal timer; confirm with `systemctl list-timers | grep certbot`.
@@ -106,20 +110,112 @@ Putting CloudFront in front later is a drop-in change: point `S3_PUBLIC_BASE_URL
 1. Create the products in Play Console. The grid is 3 tiers × 5 durations, named `publish_tier{A|B|C}_{1|3|7|30|90}d` — `npm run check:pricing` enumerates exactly what must exist.
 2. Import them into RevenueCat and expose them as Offerings.
 3. In the app, set the RevenueCat **app user id to this backend's user id** after sign-in. Purchase verification is scoped to that customer, and a mismatch means a user's own purchase will not verify.
-4. Point the RevenueCat webhook at `https://api.momentica.ferbotz.com/api/v1/webhooks/revenuecat` and set its Authorization header to `REVENUECAT_WEBHOOK_SECRET`.
+4. Point the RevenueCat webhook at `https://momentica.ferbotz.com/api/v1/webhooks/revenuecat` and set its Authorization header to `REVENUECAT_WEBHOOK_SECRET`.
 
 **Confirm before launch:** `src/billing/revenueCat.ts` reads the purchase fields (`store_purchase_identifier`, `product_id`, `id`, `purchased_at_ms`) from the documented v2 customer-purchases response. Make one real sandbox purchase and check the logs. If the shape has drifted, the module raises and logs the raw payload rather than granting anything — a mismatch shows up as publishes failing, never as free hosting.
 
 ## 9. After deploying
 
 ```bash
-curl -fsS https://api.momentica.ferbotz.com/health
-curl -fsS https://api.momentica.ferbotz.com/health/db
-curl -fsS https://api.momentica.ferbotz.com/api/v1/feed | head -c 400
+curl -fsS https://momentica.ferbotz.com/api/health
+curl -fsS https://momentica.ferbotz.com/api/health/db
+curl -fsS https://momentica.ferbotz.com/api/v1/feed | head -c 400
 ```
 
-`/health/db` returns 503 if Postgres is unreachable, which makes it the right target for an uptime check.
+`/api/health/db` returns 503 if Postgres is unreachable, which makes it the right target for an uptime check.
 
 ## Rollback
 
 Images are tagged `momentica-api:latest`; keep the previous one tagged before building so a rollback is `docker compose up -d` with the old tag. Since migrations run separately and roll forward only, a rollback of the app is safe as long as the previous version tolerates the newer schema — which is why additive migrations are strongly preferred.
+
+---
+
+## The live instance (as deployed 2026-08-26)
+
+Momentica runs as the fourth app on a shared `t3.micro` in `ap-south-1`
+(`i-0ee7ba0922056100d`, `13.205.128.80`) alongside AuraPix, Billanta and
+Curiously. The house pattern there is: one Docker container per app publishing
+to a loopback port, one nginx site per hostname, and a single host Postgres with
+a database and role per app.
+
+| | |
+| --- | --- |
+| App directory | `/opt/apps/momentica/Momentica-backend` |
+| Container | `momentica-api`, host port `127.0.0.1:8092` |
+| nginx site | `/etc/nginx/sites-available/momentica` → `momentica.ferbotz.com` |
+| Public base | `https://momentica.ferbotz.com/api` |
+| Database | `momentica` / role `momentica` on the host Postgres 18 |
+| DB password | `~/.momentica-dbpass` on the instance (mode 600) |
+| S3 bucket | `momentica-media` (`ap-south-1`) |
+| S3 IAM user | `momentica-app`, inline policy `momentica-media-rw` |
+
+Loopback ports already taken on that box: `8080` AuraPix, `8090` Curiously,
+`8091` Billanta, `8092` Momentica.
+
+### Two things that will bite you
+
+**`.env` and `.env.production` are different files with different jobs.**
+`docker-compose.prod.yml` reads `env_file: .env.production` for the container's
+runtime configuration, but Compose's own `${HOST_PORT}` substitution does *not*
+see `env_file` values — it reads `./.env`. So the published port lives in `.env`
+and everything else lives in `.env.production`. Getting this wrong silently
+publishes on the default port instead of failing.
+
+**Postgres needs a per-app `pg_hba.conf` line.** Containers reach the host
+database over the Docker bridge, so each app has its own entry:
+
+```
+host    momentica       momentica       172.16.0.0/12           scram-sha-256
+```
+
+Append it and `systemctl reload postgresql`. Without it the container gets a
+connection refusal that looks like a credentials problem.
+
+### Capacity
+
+The box has 908 MB RAM and runs four apps plus Postgres and nginx; it sits
+around 340 MB available with ~700 MB of swap in use. Before building an image
+there, reclaim space first — `docker builder prune -af` recovered 6.5 GB and
+took the disk from 89% to 63%. If a fifth app is ever added, move to a larger
+instance rather than squeezing.
+
+### Media storage as actually provisioned
+
+Bucket `momentica-media` in `ap-south-1`, created 2026-08-26:
+
+- **Public ACLs blocked**, but `BlockPublicPolicy` is off so the scoped policy
+  can apply. Public `s3:GetObject` is granted **only** on `img/*` — nothing else
+  in the bucket is world-readable, and there is no `ListBucket` for anyone.
+- **CORS** allows `GET`/`HEAD` from `https://momentica.ferbotz.com`.
+- The application authenticates as IAM user **`momentica-app`**, whose only
+  permission is `PutObject`/`GetObject`/`DeleteObject` on
+  `arn:aws:s3:::momentica-media/img/*`. It cannot list the bucket, touch other
+  prefixes, or reach any other AWS service. Rotate its key with
+  `aws iam create-access-key --user-name momentica-app` followed by deleting the
+  old one.
+
+Verified end to end on the live instance: upload → sharp → WebP → S3, both
+variants publicly readable with the correct `image/webp` content type, and
+delete working.
+
+### One hostname, two halves
+
+`momentica.ferbotz.com` serves both the API and (eventually) the renderer:
+
+| Path | Served by |
+| --- | --- |
+| `/api/*` | this backend, proxied to `127.0.0.1:8092` |
+| `/api/health`, `/api/health/db` | ops endpoints, rewritten to the app's `/health*` |
+| `/*` | the web renderer — **not deployed yet**, currently returns 404 |
+
+Share codes are always exactly 8 base62 characters, so they can never collide
+with `/api`, `/health` or `/.well-known`. When the renderer ships, replace the
+`location /` block; nothing under `/api/` needs to change.
+
+TLS was issued by certbot on 2026-08-26 (expires 2026-11-24, auto-renewing) and
+HTTP is redirected to HTTPS.
+
+### Still outstanding on the live deployment
+
+- **The web renderer does not exist**, so `/` and every share link return 404.
+- **RevenueCat is unset**, so publish and renew answer 503 by design.
