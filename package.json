@@ -1,0 +1,53 @@
+{
+  "name": "momentica-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API backend for Momentica \u2014 turn moments into memories",
+  "main": "dist/app.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only --exit-child src/app.ts",
+    "build": "prisma generate && tsc",
+    "start": "node dist/app.js",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "check:errors": "ts-node src/scripts/check-errors.ts",
+    "check:registry": "ts-node src/scripts/check-registry.ts",
+    "check:validate": "ts-node src/scripts/check-validate.ts",
+    "check:sharecode": "ts-node src/scripts/check-sharecode.ts",
+    "check:pricing": "ts-node src/scripts/check-pricing.ts",
+    "check:all": "npm run check:errors && npm run check:routes && npm run check:registry && npm run check:validate && npm run check:sharecode && npm run check:pricing",
+    "smoke": "ts-node src/scripts/smoke-api.ts",
+    "purge:drafts": "ts-node src/scripts/purge-abandoned-drafts.ts",
+    "purge:users": "ts-node src/scripts/purge-deleted-users.ts",
+    "cleanup:images": "ts-node src/scripts/cleanup-orphan-images.ts",
+    "check:routes": "ts-node src/scripts/check-routes.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.750.0",
+    "@prisma/client": "^6.19.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "google-auth-library": "^10.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "sharp": "^0.35.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^25.0.0",
+    "prisma": "^6.19.3",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}

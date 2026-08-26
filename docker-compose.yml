@@ -1,0 +1,25 @@
+# Development stack. The API itself runs on the host via `npm run dev` so that
+# ts-node-dev hot reload works; this file exists to provide Postgres.
+services:
+  postgres:
+    image: postgres:16
+    container_name: momentica-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: momentica
+      POSTGRES_PASSWORD: momentica
+      POSTGRES_DB: momentica
+    ports:
+      # 55432 on the host: a locally installed Postgres commonly owns 5432, and
+      # the bind would fail. Container-internal port is still 5432.
+      - '127.0.0.1:55432:5432'
+    volumes:
+      - momentica-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U momentica -d momentica']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  momentica-pgdata:

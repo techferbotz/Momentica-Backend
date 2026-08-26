@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2020"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "declaration": false,
+    "removeComments": false,
+    "pretty": true
+  },
+  // ts-node compiles per file on demand, so ambient declarations that nothing
+  // imports (src/types/express.d.ts) are invisible to it unless it loads the
+  // full file list. Without this, `tsc --noEmit` passes while every check
+  // script fails to compile.
+  "ts-node": {
+    "files": true,
+    "transpileOnly": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

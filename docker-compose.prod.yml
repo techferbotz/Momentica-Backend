@@ -1,0 +1,36 @@
+# Production stack.
+#
+# There is no Postgres here on purpose: production connects to a database that
+# outlives any container. The API publishes on loopback only — nginx terminates
+# TLS and proxies to it.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: momentica-api:latest
+    container_name: momentica-api
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+    ports:
+      - '127.0.0.1:3000:3000'
+    extra_hosts:
+      # Lets DATABASE_URL point at a Postgres running on the EC2 host itself.
+      - 'host.docker.internal:host-gateway'
+
+  # Migrations are a discrete step, never part of starting the API: two API
+  # containers coming up at once would race, and a bad migration would take the
+  # service down with it. Run explicitly, before deploying:
+  #   docker compose -f docker-compose.prod.yml run --rm migrate
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: momentica-api:latest
+    profiles: ['tools']
+    env_file: .env.production
+    entrypoint: ['npx', 'prisma', 'migrate', 'deploy']
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

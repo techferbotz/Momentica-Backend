@@ -1,0 +1,212 @@
+// Momentica — data model.
+//
+// Two ownership rules drive most of the shape here:
+//   1. A creation is owned by a DraftSession before login and by a User after it.
+//      Exactly one of `ownerUserId` / `draftSessionId` is set at any time.
+//   2. Every owner-scoped query filters on the owning principal, and a row that
+//      doesn't match is reported as absent — never as forbidden.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CreationStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum PurchaseState {
+  ACTIVE
+  REFUNDED
+  REVOKED
+}
+
+enum RsvpAnswer {
+  YES
+  NO
+  MAYBE
+}
+
+model User {
+  id        String    @id @default(uuid())
+  googleSub String    @unique
+  email     String
+  name      String
+  avatarUrl String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  creations     Creation[]
+  images        Image[]
+  purchases     Purchase[]
+  refreshTokens RefreshToken[]
+  draftSessions DraftSession[]
+
+  @@index([deletedAt])
+}
+
+model RefreshToken {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// sha256 of the opaque 32-byte token. The raw token is never stored.
+  tokenHash String @unique
+  /// Rotation family. Presenting an already-rotated token revokes the whole family.
+  familyId  String
+
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+/// Anonymous ownership for drafts created before the user signs in.
+model DraftSession {
+  id              String  @id @default(uuid())
+  /// sha256 of the opaque token held by the device.
+  tokenHash       String  @unique
+  claimedByUserId String?
+  claimedBy       User?   @relation(fields: [claimedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  creations Creation[]
+  images    Image[]
+
+  @@index([claimedByUserId])
+  @@index([lastSeenAt])
+}
+
+model Creation {
+  id         String         @id @default(uuid())
+  /// Key into the code-defined template registry.
+  templateId String
+  status     CreationStatus @default(DRAFT)
+  /// Placeholder values, validated against the template's field contract.
+  data       Json
+
+  ownerUserId    String?
+  owner          User?         @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  draftSessionId String?
+  draftSession   DraftSession? @relation(fields: [draftSessionId], references: [id], onDelete: Cascade)
+
+  /// 8-char base62, assigned at publish and cleared on soft-delete so a deleted
+  /// creation can't hold a code hostage.
+  shareCode    String? @unique
+  /// Image id used for the link preview. Intentionally not a relation: a second
+  /// FK between Creation and Image would make the pair cyclic and complicate
+  /// deletes for a field that is validated at write time anyway.
+  coverImageId String?
+
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  viewCount   Int       @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  images    Image[]
+  purchases Purchase[]
+  rsvps     RsvpResponse[]
+  views     ViewDaily[]
+
+  @@index([ownerUserId, updatedAt])
+  @@index([draftSessionId])
+  @@index([expiresAt])
+  @@index([status, expiresAt])
+}
+
+model Image {
+  id String @id @default(uuid())
+
+  ownerUserId    String?
+  owner          User?         @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  draftSessionId String?
+  draftSession   DraftSession? @relation(fields: [draftSessionId], references: [id], onDelete: Cascade)
+  creationId     String?
+  creation       Creation?     @relation(fields: [creationId], references: [id], onDelete: SetNull)
+
+  /// S3 object keys. No user segment in the key, so image URLs from two
+  /// published links can't be correlated back to the same author.
+  keyFull  String
+  keyThumb String
+  width    Int
+  height   Int
+  bytes    Int
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([creationId])
+  @@index([ownerUserId])
+  @@index([draftSessionId])
+  @@index([deletedAt])
+}
+
+model Purchase {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creationId String
+  creation   Creation @relation(fields: [creationId], references: [id], onDelete: Cascade)
+
+  /// RevenueCat transaction id — the idempotency key for publish and renew.
+  rcTransactionId String @unique
+  rcAppUserId     String
+
+  productId String
+  tierKey   String
+  days      Int
+
+  /// Informational only; the stores compute all money. Serialized as a string.
+  priceMinorUnits BigInt?
+  currency        String?
+
+  purchasedAt DateTime
+  state       PurchaseState @default(ACTIVE)
+  raw         Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([creationId])
+}
+
+model RsvpResponse {
+  id         String   @id @default(uuid())
+  creationId String
+  creation   Creation @relation(fields: [creationId], references: [id], onDelete: Cascade)
+
+  guestName    String
+  attending    RsvpAnswer
+  guestCount   Int        @default(1)
+  message      String?
+  contactPhone String?
+
+  createdAt DateTime @default(now())
+
+  @@index([creationId, createdAt])
+}
+
+model ViewDaily {
+  creationId String
+  creation   Creation @relation(fields: [creationId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+  count      Int      @default(0)
+
+  @@id([creationId, date])
+}
