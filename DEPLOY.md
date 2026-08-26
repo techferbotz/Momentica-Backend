@@ -61,11 +61,54 @@ Never on container start: two API containers coming up together would race, and 
 #    image and cheerfully report "No pending migrations" (HOA protocol 05).
 docker compose -f docker-compose.prod.yml run --rm --build migrate
 # 2) then rebuild and recreate the app, so its baked-in Prisma client matches.
-docker compose -f docker-compose.prod.yml up -d --build api
+docker compose -f docker-compose.prod.yml up -d --build app
 ```
 
 Migrate **before** rebuilding the app, never after. Roll forward only — to undo,
 write a new migration.
+
+
+## Deploying from git (HOA protocol 05)
+
+The box holds a git checkout at `/opt/apps/momentica/Momentica-Backend`, tracking
+`master` on `git@github.com:techferbotz/Momentica-Backend.git`. The instance
+authenticates to GitHub as `techferbotz` with a key already on it — the same way
+AuraPix, Billanta and Curiously are checked out.
+
+**Deploy, no schema change:**
+
+```bash
+ssh -i <box-key>.pem ubuntu@13.205.128.80
+cd /opt/apps/momentica/Momentica-Backend
+git pull
+sudo docker compose -f docker-compose.prod.yml up -d --build app
+curl -fsS https://momentica.ferbotz.com/api/health
+```
+
+**Deploy WITH a migration** — order matters, migrate first so the columns exist
+before the app that expects them:
+
+```bash
+cd /opt/apps/momentica/Momentica-Backend
+git pull
+sudo docker compose -f docker-compose.prod.yml run --rm --build migrate
+sudo docker compose -f docker-compose.prod.yml up -d --build app
+```
+
+`--build` on the migrate service is not optional. Without it Compose can run a
+stale image and cheerfully report "No pending migrations".
+
+**`.env` files never come from git.** `.env.production` (runtime config) and
+`.env` (Compose's `HOST_PORT` substitution) live only on the box and are
+gitignored. A fresh clone must have both restored before the app will start.
+
+**Verify:**
+
+```bash
+git -C /opt/apps/momentica/Momentica-Backend rev-parse --short HEAD
+sudo docker compose -f docker-compose.prod.yml ps app
+sudo docker compose -f docker-compose.prod.yml logs --tail=100 app
+```
 
 ## 5. nginx and TLS
 
@@ -141,7 +184,7 @@ a database and role per app.
 | | |
 | --- | --- |
 | App directory | `/opt/apps/momentica/Momentica-backend` |
-| Container | `momentica-api`, host port `127.0.0.1:8092` |
+| Container | `momentica-app`, host port `127.0.0.1:8092` |
 | nginx site | `/etc/nginx/sites-available/momentica` → `momentica.ferbotz.com` |
 | Public base | `https://momentica.ferbotz.com/api` |
 | Database | `momentica` / role `momentica` on the host Postgres 18 |

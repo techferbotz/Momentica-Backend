@@ -1,5 +1,7 @@
 # Development stack. The API itself runs on the host via `npm run dev` so that
 # ts-node-dev hot reload works; this file exists to provide Postgres.
+name: momentica
+
 services:
   postgres:
     image: postgres:16

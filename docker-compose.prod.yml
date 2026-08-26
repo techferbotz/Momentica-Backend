@@ -3,13 +3,17 @@
 # There is no Postgres here on purpose: production connects to a database that
 # outlives any container. The API publishes on loopback only — nginx terminates
 # TLS and proxies to it.
+# Protocol 03: an explicit project name keeps containers and networks as
+# momentica_* on a box shared with three other apps.
+name: momentica
+
 services:
-  api:
+  app:
     build:
       context: .
       dockerfile: docker/Dockerfile
     image: momentica-api:latest
-    container_name: momentica-api
+    container_name: momentica-app
     restart: unless-stopped
     env_file: .env.production
     environment:
