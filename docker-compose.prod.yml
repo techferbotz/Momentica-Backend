@@ -26,6 +26,44 @@ services:
       # Lets DATABASE_URL point at a Postgres running on the EC2 host itself.
       - 'host.docker.internal:host-gateway'
 
+  # The web renderer — what recipients see at momentica.ferbotz.com/{code}.
+  #
+  # Deliberately a service in THIS file rather than a second compose project.
+  # Two compose files sharing a project name treat each other's containers as
+  # orphans, and `--remove-orphans` on one would delete the other; one file
+  # with two services has no such failure mode, and they now ship from the
+  # same commit anyway.
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    image: momentica-web:latest
+    container_name: momentica-web
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      NODE_ENV: production
+      # Container-to-container on the compose network — no host hop, no
+      # loopback. Every share link is `no-store`, so SSR fetches the API on
+      # every single request; this is the reason the renderer is co-located.
+      API_BASE: http://app:3000/api
+      # The PUBLIC hostname, not API_BASE. Used to absolutise og:image, which
+      # must be absolute or no link preview renders at all.
+      PUBLIC_ORIGIN: https://momentica.ferbotz.com
+      # The renderer must never be the process that pushes Postgres into swap.
+      NODE_OPTIONS: --max-old-space-size=128
+    ports:
+      # Loopback only. nginx maps `/` on the public hostname to this.
+      - '127.0.0.1:${WEB_HOST_PORT:-8093}:4321'
+    mem_limit: 192m
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:4321/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   # Migrations are a discrete step, never part of starting the API: two API
   # containers coming up at once would race, and a bad migration would take the
   # service down with it. Run explicitly, before deploying:
