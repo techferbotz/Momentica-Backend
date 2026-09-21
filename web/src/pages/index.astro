@@ -1,0 +1,194 @@
+---
+import Stage from '../components/Stage.astro';
+import { TEMPLATES } from '@api/templates/registry';
+import { manifestFor, unimplementedLiveTemplates } from '../templates/manifest';
+import { PUBLIC_ORIGIN } from '../lib/og';
+
+/**
+ * A holding page while the real landing is built (phase 4).
+ *
+ * It earns its place before then by being honest about rollout state: every
+ * template the backend advertises as live, and whether this renderer can
+ * actually draw it yet. That gap is the thing most likely to bite during a
+ * rollout, so it should be one click away rather than a surprise.
+ */
+const live = TEMPLATES.filter((template) => template.live);
+const pending = unimplementedLiveTemplates();
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=300');
+
+const og = {
+  title: 'Momentica',
+  description: 'Moments, made personal — a page for the ones worth keeping.',
+  imageUrl: null,
+  pageUrl: `${PUBLIC_ORIGIN}/`,
+};
+---
+
+<Stage og={og} robots="index, follow">
+  <main class="home">
+    <header>
+      <p class="mark">Momentica</p>
+      <h1>Moments, made personal.</h1>
+      <p class="sub">
+        A page for a first birthday, an invitation, a question worth asking properly — shared as a link
+        that opens on any phone, with no app and no account.
+      </p>
+    </header>
+
+    <section>
+      <h2>Templates</h2>
+      <ul class="grid">
+        {live.map((template) => {
+          const built = Boolean(manifestFor(template.id));
+          return (
+            <li class:list={['card', { pending: !built }]}>
+              {built ? (
+                <a href={`/templates/${template.id}`}>
+                  <span class="name">{template.name}</span>
+                  <span class="tagline">{template.tagline}</span>
+                  <span class="cta">See it →</span>
+                </a>
+              ) : (
+                <div>
+                  <span class="name">{template.name}</span>
+                  <span class="tagline">{template.tagline}</span>
+                  <span class="cta muted">Page not built yet</span>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {pending.length > 0 && (
+        <p class="warn">
+          <strong>{pending.length}</strong>{' '}
+          {pending.length === 1 ? 'template is' : 'templates are'} flagged live in the backend but have
+          no page here yet, so the app's feed is advertising {pending.length === 1 ? 'it' : 'them'}.
+        </p>
+      )}
+    </section>
+  </main>
+</Stage>
+
+<style>
+  .home {
+    min-height: 100svh;
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: calc(56px + var(--safe-t)) calc(24px + var(--safe-r)) calc(72px + var(--safe-b))
+      calc(24px + var(--safe-l));
+    background: linear-gradient(178deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+  }
+
+  .mark {
+    margin: 0 0 26px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--rose-deep);
+    opacity: 0.6;
+  }
+
+  h1 {
+    margin: 0 0 16px;
+    font-size: clamp(32px, 9vw, 46px);
+    font-weight: 400;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .sub {
+    margin: 0 0 52px;
+    max-width: 34rem;
+    font-size: 17.5px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+  }
+
+  h2 {
+    margin: 0 0 18px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rose-deep);
+    opacity: 0.75;
+  }
+
+  .grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+  }
+
+  .card a,
+  .card div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    height: 100%;
+    padding: 18px 20px;
+    border-radius: 10px;
+    background: rgba(253, 248, 241, 0.72);
+    text-decoration: none;
+    transition: transform 220ms var(--ease), background 220ms var(--ease);
+  }
+
+  .card a:hover {
+    background: var(--paper);
+    transform: translateY(-2px);
+  }
+
+  .card.pending a,
+  .card.pending div {
+    background: rgba(253, 248, 241, 0.34);
+  }
+
+  .name {
+    font-size: 19px;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .tagline {
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    flex: 1;
+  }
+
+  .cta {
+    margin-top: 8px;
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--rose-deep);
+  }
+
+  .cta.muted {
+    color: var(--ink-soft);
+    opacity: 0.6;
+  }
+
+  .warn {
+    margin: 22px 0 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(138, 47, 71, 0.09);
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--rose-deep);
+  }
+</style>

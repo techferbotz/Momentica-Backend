@@ -1,0 +1,125 @@
+---
+interface Props {
+  /** The moment's own title, when there is one worth keeping visible. */
+  eyebrow?: string | null;
+  title: string;
+  body: string;
+  hint?: string | null;
+  ctaLabel?: string | null;
+  ctaHref?: string | null;
+}
+
+const { eyebrow, title, body, hint, ctaLabel, ctaHref } = Astro.props;
+---
+
+<main class="notice">
+  <div class="card">
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h1>{title}</h1>
+    <p class="body">{body}</p>
+    {hint && <p class="hint">{hint}</p>}
+    {ctaLabel && ctaHref && (
+      <a class="cta" href={ctaHref}>{ctaLabel}</a>
+    )}
+  </div>
+  <p class="mark">Momentica</p>
+</main>
+
+<style>
+  .notice {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: calc(32px + var(--safe-t)) calc(24px + var(--safe-r)) calc(32px + var(--safe-b))
+      calc(24px + var(--safe-l));
+    background: linear-gradient(170deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+    text-align: center;
+  }
+
+  .card {
+    max-width: 34ch;
+    animation: rise 600ms var(--ease) both;
+  }
+
+  .eyebrow {
+    margin: 0 0 14px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--rose-deep);
+    opacity: 0.75;
+  }
+
+  h1 {
+    margin: 0 0 16px;
+    font-size: clamp(28px, 8vw, 36px);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .body {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+  }
+
+  .hint {
+    margin: 18px 0 0;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    opacity: 0.85;
+  }
+
+  .cta {
+    display: inline-block;
+    margin-top: 28px;
+    padding: 13px 26px;
+    border-radius: 999px;
+    background: var(--rose-deep);
+    color: var(--paper);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 200ms var(--ease), background 200ms var(--ease);
+  }
+
+  .cta:hover {
+    background: var(--rose);
+    transform: translateY(-1px);
+  }
+
+  .mark {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--rose-deep);
+    opacity: 0.4;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

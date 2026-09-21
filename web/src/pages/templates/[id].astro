@@ -1,0 +1,26 @@
+---
+import RenderRoute from '../../components/RenderRoute.astro';
+import { resolveRoute } from '../../lib/route';
+
+/**
+ * The shopfront: /templates/{id}.
+ *
+ * A thin alias, not a second implementation. It resolves the template id to
+ * its preview code and then joins the identical path everything else takes —
+ * which is the only way the preview is a truthful shopfront rather than a
+ * lookalike that drifts from the real thing.
+ *
+ * `/templates/{id}/thumb.webp` and the preview stills live under this same
+ * prefix as static files. nginx serves those from disk before the request ever
+ * reaches this route, and in dev Astro serves them from public/.
+ */
+const id = Astro.params.id ?? '';
+const outcome = await resolveRoute(`pv_${id}`);
+
+Astro.response.status = outcome.status;
+Astro.response.headers.set('Cache-Control', outcome.cacheControl);
+Astro.response.headers.set('X-Content-Type-Options', 'nosniff');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+---
+
+<RenderRoute outcome={outcome} canonicalPath={`/templates/${id}`} />

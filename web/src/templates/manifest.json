@@ -1,0 +1,9 @@
+{
+  "templates": [
+    {
+      "id": "greeting_open_letter",
+      "ogFallbackImage": "/templates/greeting_open_letter/p1.webp",
+      "readsKeys": ["recipientName", "senderName", "occasion", "letter", "photo"]
+    }
+  ]
+}

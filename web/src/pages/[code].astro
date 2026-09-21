@@ -1,0 +1,27 @@
+---
+import RenderRoute from '../components/RenderRoute.astro';
+import { resolveRoute } from '../lib/route';
+
+/**
+ * The route. Every share link lands here.
+ *
+ *   pv_<templateId>   feed preview, from the template's sample data
+ *   d_<jwt>           the creator's own draft, before payment
+ *   <8 base62 chars>  a published, paid link
+ *
+ * One fetch, one render path, no branching on which of the three it is. The
+ * code's shape is the API's business, not this file's.
+ */
+const code = Astro.params.code ?? '';
+const outcome = await resolveRoute(code);
+
+Astro.response.status = outcome.status;
+Astro.response.headers.set('Cache-Control', outcome.cacheControl);
+// The renderer sets its own headers rather than passing the API's through —
+// the API sends `public, max-age=300` even on 404s, which would pin a
+// just-published link as dead for five minutes.
+Astro.response.headers.set('X-Content-Type-Options', 'nosniff');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+---
+
+<RenderRoute outcome={outcome} />

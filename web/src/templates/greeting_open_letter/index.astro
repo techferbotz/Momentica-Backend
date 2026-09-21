@@ -1,0 +1,364 @@
+---
+import Photo from '../../components/Photo.astro';
+import { Values } from '../../lib/values';
+import type { RenderPayload } from '../../lib/types';
+
+interface Props {
+  payload: RenderPayload;
+}
+
+const { payload } = Astro.props;
+const v = new Values(payload.values);
+
+const OCCASIONS = ['thank_you', 'sorry', 'congratulations', 'good_luck', 'thinking_of_you'] as const;
+const OCCASION_LABEL: Record<(typeof OCCASIONS)[number], string> = {
+  thank_you: 'Thank you',
+  sorry: 'I’m sorry',
+  congratulations: 'Congratulations',
+  good_luck: 'Good luck',
+  thinking_of_you: 'Thinking of you',
+};
+
+const recipient = v.text('recipientName', 'you');
+const sender = v.text('senderName');
+const letter = v.text('letter');
+const occasion = v.choice('occasion', OCCASIONS, 'thank_you');
+const photo = v.image('photo');
+
+// The seal carries the sender's initial. Falls back to a plain mark rather
+// than an empty circle when the name is absent.
+const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
+---
+
+<!-- Set before paint so the envelope never flashes open. Without JavaScript the
+     letter simply renders open and readable, which is the correct fallback for
+     a page whose whole job is delivering words. -->
+<script is:inline>document.documentElement.classList.add('js');</script>
+
+<main class="letter" data-occasion={occasion}>
+  <section class="stage">
+    <button class="envelope" type="button" data-open aria-expanded="false">
+      <span class="sr-only">Open the letter</span>
+      <span class="flap" aria-hidden="true"></span>
+      <span class="front" aria-hidden="true">
+        <span class="addressed">For</span>
+        <span class="name">{recipient}</span>
+      </span>
+      <span class="seal" aria-hidden="true">{initial}</span>
+    </button>
+    <p class="prompt" aria-hidden="true">Tap to open</p>
+  </section>
+
+  <article class="paper" data-paper>
+    <p class="occasion">{OCCASION_LABEL[occasion]}</p>
+    <h1>{recipient}</h1>
+
+    {photo && (
+      <figure class="photo">
+        <Photo image={photo} alt={`A photo for ${recipient}`} priority />
+      </figure>
+    )}
+
+    <div class="prose">{letter}</div>
+
+    {sender && <p class="sign">— {sender}</p>}
+  </article>
+</main>
+
+<style>
+  /* ---- occasion palettes -------------------------------------------------
+     One template, five moods. The choice field drives the whole page, not
+     just an accent swatch: a "sorry" should not arrive in celebratory gold. */
+  .letter[data-occasion='thank_you'] {
+    --stage-top: #f7e1e4;
+    --stage-bottom: #eec7d0;
+    --accent: #b0455f;
+    --accent-deep: #8a2f47;
+  }
+  .letter[data-occasion='sorry'] {
+    --stage-top: #e2e7ee;
+    --stage-bottom: #c7d2e1;
+    --accent: #4d6079;
+    --accent-deep: #384860;
+  }
+  .letter[data-occasion='congratulations'] {
+    --stage-top: #f9ead0;
+    --stage-bottom: #f0d5a5;
+    --accent: #9a6b1f;
+    --accent-deep: #7a5214;
+  }
+  .letter[data-occasion='good_luck'] {
+    --stage-top: #ddeee1;
+    --stage-bottom: #c0ddce;
+    --accent: #2f6b52;
+    --accent-deep: #21503d;
+  }
+  .letter[data-occasion='thinking_of_you'] {
+    --stage-top: #e9e3f2;
+    --stage-bottom: #d4c9e8;
+    --accent: #5f4b87;
+    --accent-deep: #47376a;
+  }
+
+  .letter {
+    position: relative;
+    min-height: 100svh;
+    background: linear-gradient(168deg, var(--stage-top) 0%, var(--stage-bottom) 100%);
+    overflow: hidden;
+  }
+
+  /* ---- the closed envelope ---------------------------------------------- */
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    padding: calc(24px + var(--safe-t)) 24px calc(24px + var(--safe-b));
+    transition: opacity 700ms var(--ease), transform 700ms var(--ease);
+  }
+
+  .envelope {
+    position: relative;
+    width: min(78vw, 340px);
+    aspect-ratio: 3 / 2;
+    border-radius: 8px;
+    background: var(--paper);
+    box-shadow: 0 18px 44px rgba(60, 40, 45, 0.22), 0 2px 6px rgba(60, 40, 45, 0.12);
+    animation: breathe 5s ease-in-out infinite;
+  }
+
+  /* The flap, folded down over the front. */
+  .flap {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 62%;
+    background: linear-gradient(175deg, #fffdf9 0%, var(--paper) 100%);
+    border-radius: 8px 8px 0 0;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top center;
+    transform: rotateX(0deg);
+    transition: transform 800ms var(--ease);
+    box-shadow: 0 3px 8px rgba(60, 40, 45, 0.07);
+  }
+
+  .front {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    padding-bottom: 15%;
+  }
+
+  .addressed {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-deep);
+    opacity: 0.6;
+  }
+
+  .name {
+    font-family: var(--font-letter);
+    font-size: clamp(24px, 7vw, 32px);
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  .seal {
+    position: absolute;
+    left: 50%;
+    top: 58%;
+    width: 54px;
+    height: 54px;
+    margin: -27px 0 0 -27px;
+
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: radial-gradient(circle at 34% 30%, var(--accent) 0%, var(--accent-deep) 74%);
+    box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.22), 0 3px 9px rgba(60, 40, 45, 0.3);
+
+    font-family: var(--font-letter);
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.9);
+
+    transition: transform 500ms var(--ease), opacity 400ms var(--ease);
+  }
+
+  .prompt {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--accent-deep);
+    opacity: 0.7;
+    animation: pulse 2.6s ease-in-out infinite;
+  }
+
+  /* ---- the letter -------------------------------------------------------- */
+  .paper {
+    position: relative;
+    z-index: 2;
+    min-height: 100svh;
+    margin: 0 auto;
+    padding: calc(56px + var(--safe-t)) 26px calc(72px + var(--safe-b));
+    max-width: 40rem;
+    background: var(--paper);
+    box-shadow: 0 0 60px rgba(60, 40, 45, 0.14);
+  }
+
+  .occasion {
+    margin: 0 0 10px;
+    font-family: var(--font-ui);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    margin: 0 0 30px;
+    font-size: clamp(34px, 11vw, 52px);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+
+  h1::after {
+    content: '';
+    display: block;
+    width: 46px;
+    height: 2px;
+    margin-top: 22px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .photo {
+    margin: 0 0 30px;
+  }
+
+  .photo :global(img) {
+    width: 100%;
+    border-radius: 3px;
+    box-shadow: 0 8px 24px rgba(60, 40, 45, 0.16);
+  }
+
+  .prose {
+    /* longText keeps the creator's own line breaks — they wrote a letter, not
+       a paragraph, and where they chose to break it carries meaning. */
+    white-space: pre-wrap;
+    font-size: 18px;
+    line-height: 1.78;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+
+  .sign {
+    margin: 34px 0 0;
+    font-size: 19px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  /* ---- open / closed state ---------------------------------------------- */
+  /* Without JavaScript none of this applies and the letter is simply there. */
+  :global(html.js) .paper {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+    pointer-events: none;
+    transition: opacity 620ms var(--ease) 260ms, transform 720ms var(--ease) 260ms;
+  }
+
+  :global(html.js) .letter.is-open .paper {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .letter.is-open .stage {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.94);
+    pointer-events: none;
+  }
+
+  .letter.is-open .flap {
+    transform: rotateX(-172deg);
+  }
+
+  .letter.is-open .seal {
+    transform: scale(1.5) rotate(-14deg);
+    opacity: 0;
+  }
+
+  .letter.is-open .envelope {
+    animation: none;
+  }
+
+  .letter.is-open .prompt {
+    opacity: 0;
+  }
+
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-7px);
+    }
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 0.32;
+    }
+  }
+
+  /* The envelope is the interaction, not the decoration — a reduced-motion
+     recipient still taps to open, it simply does not animate on the way. */
+  @media (prefers-reduced-motion: reduce) {
+    .envelope,
+    .prompt {
+      animation: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var letter = document.querySelector('.letter');
+    var button = document.querySelector('[data-open]');
+    if (!letter || !button) return;
+
+    function open() {
+      if (letter.classList.contains('is-open')) return;
+      letter.classList.add('is-open');
+      button.setAttribute('aria-expanded', 'true');
+      // Move focus to the letter so a keyboard or screen-reader user lands on
+      // the words rather than on a button that no longer does anything.
+      var paper = document.querySelector('[data-paper]');
+      if (paper) {
+        paper.setAttribute('tabindex', '-1');
+        paper.focus({ preventScroll: true });
+      }
+    }
+
+    button.addEventListener('click', open);
+  })();
+</script>

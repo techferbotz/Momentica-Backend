@@ -1,0 +1,113 @@
+/*
+ * Shared ground for every template.
+ *
+ * Deliberately single-theme: a template is a designed experience with its own
+ * palette, and a letter is cream paper whether or not the recipient's phone is
+ * in dark mode. Templates override the --stage-* and --ink-* tokens; nothing
+ * here reads prefers-color-scheme.
+ */
+
+:root {
+  /* Brand ground — soft pink, warm. Templates tint from here. */
+  --stage-top: #f6dfe2;
+  --stage-bottom: #efc9d2;
+  --paper: #fdf8f1;
+  --ink: #2f2521;
+  --ink-soft: #6d5c53;
+  --rose: #b0455f;
+  --rose-deep: #8a2f47;
+
+  --font-letter: ui-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  /* One easing for the whole product. Slow out, gentle settle. */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--stage-bottom);
+  color: var(--ink);
+  font-family: var(--font-letter);
+  line-height: 1.6;
+  /* Recipients open this on a phone, one-handed, often outdoors. */
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--rose);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The screen-reader-only pattern, used for the real heading behind stylised art. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Every reveal in every template resolves to its END STATE here, never to a
+ * half-played animation. Built in from the first commit because retrofitting
+ * it across six templates is how it ends up half-done.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

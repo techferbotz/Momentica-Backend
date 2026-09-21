@@ -1,0 +1,35 @@
+---
+import NoticePage from './NoticePage.astro';
+import type { RenderPayload } from '../lib/types';
+
+interface Props {
+  payload: RenderPayload;
+}
+
+const { payload } = Astro.props;
+
+/**
+ * mode: 'expired'.
+ *
+ * The paid window ended. `values` is null, so `og.title` and `og.description`
+ * are the only content that survived — which is exactly why the API reports
+ * this as HTTP 200 with a mode rather than as an error: the failure envelope
+ * has nowhere to carry the copy this page is built from.
+ *
+ * The call to action cannot be a checkout. Billing runs through Play and
+ * RevenueCat, so the web has no way to take money, and pretending otherwise
+ * walks a recipient into a dead end. It is addressed to the creator, who is
+ * the only person able to act on it — and it is only rendered when we actually
+ * have somewhere to send them.
+ */
+const storeUrl = process.env.APP_STORE_URL ?? null;
+---
+
+<NoticePage
+  eyebrow={payload.og.title}
+  title="This moment has ended"
+  body={payload.og.description}
+  hint="The link was live for a while and has now expired. If you made this, you can bring it back."
+  ctaLabel={storeUrl ? 'Renew in the app' : null}
+  ctaHref={storeUrl}
+/>

@@ -1,0 +1,39 @@
+---
+import NoticePage from './NoticePage.astro';
+import type { GoneReason } from '../lib/types';
+
+interface Props {
+  reason: GoneReason;
+}
+
+const { reason } = Astro.props;
+
+/**
+ * The fifth state, which the contract does not name: nothing to render.
+ *
+ * Note what is deliberately absent from the 'unknown' copy — any claim about
+ * whether this link ever existed. The API's own message is vague for the same
+ * reason, and the renderer should not be more specific than the API was.
+ */
+const COPY: Record<GoneReason, { title: string; body: string; hint?: string }> = {
+  unknown: {
+    title: 'This link isn’t available',
+    body: 'It may have ended, or the address may be slightly different from the one that was shared.',
+    hint: 'Worth checking the original message for the full link.',
+  },
+  'draft-expired': {
+    title: 'This preview has expired',
+    body: 'Preview links last about half an hour, so they can’t be shared by accident.',
+    hint: 'Open the moment in the Momentica app to get a fresh one.',
+  },
+  unavailable: {
+    title: 'We can’t load this right now',
+    body: 'Something went wrong on our side — the link itself is probably fine.',
+    hint: 'Try again in a moment.',
+  },
+};
+
+const copy = COPY[reason];
+---
+
+<NoticePage title={copy.title} body={copy.body} hint={copy.hint ?? null} />

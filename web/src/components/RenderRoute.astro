@@ -1,0 +1,66 @@
+---
+import Stage from './Stage.astro';
+import EndedPage from './EndedPage.astro';
+import GonePage from './GonePage.astro';
+import DraftBar from './DraftBar.astro';
+import ViewPing from './ViewPing.astro';
+import { templateFor } from '../templates/pageRegistry';
+import { openGraphFor, PUBLIC_ORIGIN } from '../lib/og';
+import type { RouteOutcome } from '../lib/route';
+
+interface Props {
+  outcome: RouteOutcome;
+  /**
+   * Overrides the canonical and og:url. The shopfront is reachable at both
+   * /templates/{id} and /pv_{id} and renders identically from both, so the
+   * readable one has to be the canonical — otherwise the indexable page
+   * points search engines at the internal preview code instead.
+   */
+  canonicalPath?: string;
+}
+
+const { outcome, canonicalPath } = Astro.props;
+const { state, robots } = outcome;
+
+/**
+ * Everything a rendered page needs, in one place, for every mode.
+ *
+ * Both routes render this: `/[code]` and the `/templates/[id]` alias. That is
+ * how "one data-fetch path, do not special-case the three" stays true as the
+ * renderer grows — there is only ever one place that knows how to draw a code.
+ */
+const resolved = state.kind === 'render' ? templateFor(state.payload.templateId) : undefined;
+
+const base =
+  state.kind === 'render'
+    ? openGraphFor(state.code, state.payload, resolved?.ogFallbackImage)
+    : {
+        title: 'Momentica',
+        description: 'Moments, made personal.',
+        imageUrl: null,
+        pageUrl: `${PUBLIC_ORIGIN}/${state.code}`,
+      };
+
+const og = canonicalPath ? { ...base, pageUrl: `${PUBLIC_ORIGIN}${canonicalPath}` } : base;
+
+const mode = state.kind === 'render' ? state.payload.meta.mode : null;
+const Page = resolved?.Page;
+---
+
+<Stage og={og} robots={robots}>
+  {state.kind === 'gone' && <GonePage reason={state.reason} />}
+
+  {state.kind === 'render' && mode === 'expired' && <EndedPage payload={state.payload} />}
+
+  {state.kind === 'render' && mode !== 'expired' && Page && <Page payload={state.payload} />}
+
+  {/* The creator looking at their own unpaid work. Identical rendering,
+      plus one affordance saying so. */}
+  {state.kind === 'render' && mode === 'draft' && (
+    <DraftBar expiresAt={state.payload.meta.expiresAt} />
+  )}
+
+  {/* Published only. Never previews, never drafts — a creator refreshing their
+      own draft must not inflate the view count they are about to be shown. */}
+  {state.kind === 'render' && mode === 'published' && <ViewPing code={state.code} />}
+</Stage>

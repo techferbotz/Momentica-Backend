@@ -1,0 +1,41 @@
+---
+import type { ResolvedImage } from '../lib/types';
+
+interface Props {
+  image: ResolvedImage | null;
+  alt: string;
+  /** Use the thumb variant (<=512px) for grids and small crops. */
+  variant?: 'full' | 'thumb';
+  /** The first meaningful image on the page — skips lazy-loading. */
+  priority?: boolean;
+  class?: string;
+}
+
+const { image, alt, variant = 'full', priority = false, class: className } = Astro.props;
+
+// A photo deleted after publishing resolves to null rather than vanishing.
+// Rendering nothing is the graceful gap the contract asks for — the caller's
+// layout decides what fills the space, because "nothing" looks different in a
+// four-up grid than it does behind a letter.
+const src = image ? (variant === 'thumb' ? image.thumb : image.full) : null;
+
+// width/height come straight from the payload, so there is no layout shift to
+// chase later — zero CLS is free here rather than earned.
+const loading = priority ? 'eager' : 'lazy';
+const fetchPriority = priority ? 'high' : 'auto';
+---
+
+{
+  image && src && (
+    <img
+      src={src}
+      alt={alt}
+      width={image.width}
+      height={image.height}
+      loading={loading}
+      fetchpriority={fetchPriority}
+      decoding="async"
+      class={className}
+    />
+  )
+}

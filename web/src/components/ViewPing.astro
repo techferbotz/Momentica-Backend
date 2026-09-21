@@ -1,0 +1,46 @@
+---
+import { viewPingPath } from '../lib/render';
+
+interface Props {
+  code: string;
+}
+
+const { code } = Astro.props;
+const path = viewPingPath(code);
+---
+
+<!--
+  Recorded by an explicit ping from the browser, never as a side effect of the
+  render fetch. The server renders for link-preview crawlers and prefetchers
+  too and cannot tell them from a person — which is the entire reason the API
+  keeps this endpoint separate from the render.
+
+  Only mounted for mode === 'published'.
+-->
+<span data-view-ping={path} hidden></span>
+
+<script is:inline>
+  (function () {
+    var el = document.querySelector('[data-view-ping]');
+    if (!el) return;
+    var url = el.getAttribute('data-view-ping');
+    if (!url) return;
+
+    var fired = false;
+    function ping() {
+      if (fired || document.visibilityState !== 'visible') return;
+      fired = true;
+      // keepalive so the ping survives the recipient immediately navigating on.
+      fetch(url, { method: 'POST', keepalive: true, cache: 'no-store' }).catch(function () {});
+    }
+
+    // After first paint, so the ping never competes with rendering the moment.
+    if (document.visibilityState === 'visible') {
+      requestAnimationFrame(function () {
+        setTimeout(ping, 800);
+      });
+    } else {
+      document.addEventListener('visibilitychange', ping, { once: true });
+    }
+  })();
+</script>

@@ -1,0 +1,27 @@
+{
+  "name": "momentica-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The web renderer — what recipients see at momentica.ferbotz.com/{shareCode}",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "start": "node ./dist/server/entry.mjs",
+    "typecheck": "astro check --minimumSeverity error",
+    "check:templates": "node scripts/check-templates.mjs",
+    "check:all": "npm run typecheck && npm run check:templates"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.1.4",
+    "astro": "^7.2.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,97 @@
+---
+interface Props {
+  /** meta.expiresAt — the only mode where showing this is right. */
+  expiresAt?: string | null;
+}
+
+const { expiresAt } = Astro.props;
+
+// In draft the creator is looking at their own unpaid work, so an expiry is
+// useful information. On a published page it would be a countdown on someone's
+// proposal, which is the wrong feeling entirely — hence never rendered there.
+const expiresLabel = expiresAt
+  ? new Date(expiresAt).toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  : null;
+---
+
+<div class="draft-bar" role="status">
+  <p>
+    <strong>Only you can see this.</strong>
+    {expiresLabel ? ` Not published yet — live until ${expiresLabel} once you do.` : ' Not published yet.'}
+  </p>
+  <button type="button" data-draft-dismiss aria-label="Hide this notice">Hide</button>
+</div>
+
+<style>
+  .draft-bar {
+    position: fixed;
+    left: calc(12px + var(--safe-l));
+    right: calc(12px + var(--safe-r));
+    bottom: calc(12px + var(--safe-b));
+    z-index: 50;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(28, 22, 20, 0.92);
+    color: #fdf8f1;
+    box-shadow: 0 6px 24px rgba(28, 22, 20, 0.25);
+
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    line-height: 1.4;
+
+    animation: draft-in 400ms var(--ease) 600ms both;
+  }
+
+  .draft-bar p {
+    margin: 0;
+    flex: 1;
+  }
+
+  .draft-bar strong {
+    font-weight: 600;
+  }
+
+  .draft-bar button {
+    flex: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(253, 248, 241, 0.14);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .draft-bar[hidden] {
+    display: none;
+  }
+
+  @keyframes draft-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var bar = document.querySelector('.draft-bar');
+    var button = document.querySelector('[data-draft-dismiss]');
+    if (!bar || !button) return;
+    button.addEventListener('click', function () {
+      bar.setAttribute('hidden', '');
+    });
+  })();
+</script>
