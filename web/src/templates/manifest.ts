@@ -14,8 +14,9 @@ import data from './manifest.json';
  */
 export interface TemplateManifestEntry {
   id: string;
-  /** Used for og:image when a creation has no cover photo of its own. */
-  ogFallbackImage: string;
+  /** The 1200x630 JPEG link-preview card. Preferred over the API's own
+   * preview still, which is phone-shaped WebP built for the app carousel. */
+  ogCard: string;
   /** Every value key this template's page reads. Verified by validateManifest. */
   readsKeys: readonly string[];
 }

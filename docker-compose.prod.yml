@@ -53,6 +53,10 @@ services:
       PUBLIC_ORIGIN: https://momentica.ferbotz.com
       # The renderer must never be the process that pushes Postgres into swap.
       NODE_OPTIONS: --max-old-space-size=128
+      # Serves /states/{template}/{fixture} so a template's edge cases can be
+      # checked on a real phone. noindex and no-store; drop this line to close
+      # the route once the templates settle.
+      ENABLE_FIXTURES: '1'
     ports:
       # Loopback only. nginx maps `/` on the public hostname to this.
       - '127.0.0.1:${WEB_HOST_PORT:-8093}:4321'

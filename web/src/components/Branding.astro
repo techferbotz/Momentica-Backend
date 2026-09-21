@@ -1,0 +1,88 @@
+---
+import { PUBLIC_ORIGIN } from '../lib/og';
+
+/**
+ * "Made with Momentica" — shown when `meta.showBranding` is true.
+ *
+ * This is the product's growth loop: the recipient of a moment is the most
+ * likely person to make the next one. So it has to be actually visible and
+ * actually tappable — but it is somebody's letter, not a billboard, so it sits
+ * quietly at the bottom and never competes with the words.
+ *
+ * Lives in the shared layer rather than in each template: it is true of every
+ * moment, and six templates each remembering it is six chances to forget.
+ */
+---
+
+<a class="branding" href={PUBLIC_ORIGIN} rel="noopener">
+  <span class="dot" aria-hidden="true"></span>
+  Made with <strong>Momentica</strong>
+</a>
+
+<style>
+  .branding {
+    position: fixed;
+    left: 50%;
+    bottom: calc(14px + var(--safe-b));
+    transform: translateX(-50%);
+    z-index: 40;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 14px;
+    border-radius: 999px;
+    /* Near-opaque on purpose. It is fixed, so a long letter scrolls underneath
+       it — at 0.62 alpha the text read straight through the pill and the page
+       looked broken halfway down. */
+    background: rgba(253, 248, 241, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(60, 40, 45, 0.14);
+
+    font-family: var(--font-ui);
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    color: var(--ink-soft);
+    text-decoration: none;
+    white-space: nowrap;
+
+    /* Arrives after the moment has landed, never before it. */
+    animation: brand-in 500ms var(--ease) 1400ms both;
+    transition: background 200ms var(--ease);
+  }
+
+  .branding:hover {
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  .branding strong {
+    font-weight: 600;
+    color: var(--rose-deep);
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--rose);
+    flex: none;
+  }
+
+  @keyframes brand-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 8px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  /* The draft bar owns the bottom of the screen while it is up. */
+  :global(body:has(.draft-bar:not([hidden]))) .branding {
+    display: none;
+  }
+</style>

@@ -4,6 +4,7 @@ import EndedPage from './EndedPage.astro';
 import GonePage from './GonePage.astro';
 import DraftBar from './DraftBar.astro';
 import ViewPing from './ViewPing.astro';
+import Branding from './Branding.astro';
 import { templateFor } from '../templates/pageRegistry';
 import { openGraphFor, PUBLIC_ORIGIN } from '../lib/og';
 import type { RouteOutcome } from '../lib/route';
@@ -33,7 +34,7 @@ const resolved = state.kind === 'render' ? templateFor(state.payload.templateId)
 
 const base =
   state.kind === 'render'
-    ? openGraphFor(state.code, state.payload, resolved?.ogFallbackImage)
+    ? openGraphFor(state.code, state.payload, resolved?.ogCard)
     : {
         title: 'Momentica',
         description: 'Moments, made personal.',
@@ -58,6 +59,12 @@ const Page = resolved?.Page;
       plus one affordance saying so. */}
   {state.kind === 'render' && mode === 'draft' && (
     <DraftBar expiresAt={state.payload.meta.expiresAt} />
+  )}
+
+  {/* The growth loop. Not on the ended page — a moment that has finished is the
+      wrong moment to advertise, and that page carries its own mark already. */}
+  {state.kind === 'render' && mode !== 'expired' && state.payload.meta.showBranding && (
+    <Branding />
   )}
 
   {/* Published only. Never previews, never drafts — a creator refreshing their

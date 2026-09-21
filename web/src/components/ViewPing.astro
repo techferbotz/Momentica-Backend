@@ -9,14 +9,14 @@ const { code } = Astro.props;
 const path = viewPingPath(code);
 ---
 
-<!--
+{/*
   Recorded by an explicit ping from the browser, never as a side effect of the
   render fetch. The server renders for link-preview crawlers and prefetchers
   too and cannot tell them from a person — which is the entire reason the API
   keeps this endpoint separate from the render.
 
   Only mounted for mode === 'published'.
--->
+*/}
 <span data-view-ping={path} hidden></span>
 
 <script is:inline>

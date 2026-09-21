@@ -2,7 +2,7 @@
   "templates": [
     {
       "id": "greeting_open_letter",
-      "ogFallbackImage": "/templates/greeting_open_letter/p1.webp",
+      "ogCard": "/templates/greeting_open_letter/og.jpg",
       "readsKeys": ["recipientName", "senderName", "occasion", "letter", "photo"]
     }
   ]

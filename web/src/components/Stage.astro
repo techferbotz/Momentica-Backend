@@ -16,8 +16,8 @@ const { og, robots, themeColor = '#efc9d2', bodyClass = '' } = Astro.props;
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <!-- viewport-fit=cover so a full-bleed stage reaches under the notch; the
-         safe-area insets in base.css keep text out from under it. -->
+    {/* viewport-fit=cover so a full-bleed stage reaches under the notch; the
+         safe-area insets in base.css keep text out from under it. */}
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content={robots} />
     <meta name="theme-color" content={themeColor} />
@@ -25,9 +25,9 @@ const { og, robots, themeColor = '#efc9d2', bodyClass = '' } = Astro.props;
     <title>{og.title}</title>
     <meta name="description" content={og.description} />
 
-    <!-- Server-rendered, always. A link-preview crawler will not run JavaScript,
+    {/* Server-rendered, always. A link-preview crawler will not run JavaScript,
          and previews in WhatsApp and Instagram are most of this product's
-         distribution. -->
+         distribution. */}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Momentica" />
     <meta property="og:title" content={og.title} />

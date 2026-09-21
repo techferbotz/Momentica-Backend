@@ -18,7 +18,7 @@ const PAGES: Record<string, AstroPage> = {
 
 export interface ResolvedTemplate {
   Page: AstroPage;
-  ogFallbackImage: string;
+  ogCard: string;
 }
 
 /**
@@ -31,5 +31,5 @@ export function templateFor(templateId: string): ResolvedTemplate | undefined {
   const Page = PAGES[templateId];
   const manifest = manifestFor(templateId);
   if (!Page || !manifest) return undefined;
-  return { Page, ogFallbackImage: manifest.ogFallbackImage };
+  return { Page, ogCard: manifest.ogCard };
 }

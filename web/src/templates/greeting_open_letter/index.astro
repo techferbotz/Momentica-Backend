@@ -30,9 +30,9 @@ const photo = v.image('photo');
 const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
 ---
 
-<!-- Set before paint so the envelope never flashes open. Without JavaScript the
+{/* Set before paint so the envelope never flashes open. Without JavaScript the
      letter simply renders open and readable, which is the correct fallback for
-     a page whose whole job is delivering words. -->
+     a page whose whole job is delivering words. */}
 <script is:inline>document.documentElement.classList.add('js');</script>
 
 <main class="letter" data-occasion={occasion}>
@@ -107,10 +107,22 @@ const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
     overflow: hidden;
   }
 
+  /* While it is still sealed, the envelope IS the page. Without this the letter
+     underneath is scrollable behind it, so a recipient can scroll away from the
+     one thing they are meant to tap and find an apparently blank screen. */
+  :global(html.js body:has(.letter:not(.is-open))) {
+    overflow: hidden;
+  }
+
   /* ---- the closed envelope ---------------------------------------------- */
+  /* fixed, not absolute. Absolute would size to `.letter`, which is as tall as
+     the letter inside it — so a long letter pushed the envelope below the fold
+     and the recipient opened on a half-empty screen. The cover state belongs to
+     the viewport, not to the document. */
   .stage {
-    position: absolute;
+    position: fixed;
     inset: 0;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -130,11 +142,12 @@ const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
     animation: breathe 5s ease-in-out infinite;
   }
 
-  /* The flap, folded down over the front. */
+  /* The flap, folded down over the front. Its height sets where the point —
+     and therefore the wax — lands, which the name below has to clear. */
   .flap {
     position: absolute;
     inset: 0 0 auto;
-    height: 62%;
+    height: 56%;
     background: linear-gradient(175deg, #fffdf9 0%, var(--paper) 100%);
     border-radius: 8px 8px 0 0;
     clip-path: polygon(0 0, 100% 0, 50% 100%);
@@ -144,15 +157,18 @@ const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
     box-shadow: 0 3px 8px rgba(60, 40, 45, 0.07);
   }
 
+  /* The addressed half: strictly below the flap's point and the wax, which is
+     where an address sits on a real envelope — and the only way the name does
+     not end up underneath the seal. */
   .front {
     position: absolute;
-    inset: 0;
+    inset: 70% 0 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    gap: 2px;
-    padding-bottom: 15%;
+    justify-content: center;
+    gap: 3px;
+    padding: 0 10%;
   }
 
   .addressed {
@@ -175,10 +191,11 @@ const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
   .seal {
     position: absolute;
     left: 50%;
-    top: 58%;
-    width: 54px;
-    height: 54px;
-    margin: -27px 0 0 -27px;
+    /* Sits exactly on the flap's point, the way wax actually seals one. */
+    top: 56%;
+    width: 15%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
 
     display: grid;
     place-items: center;
@@ -187,7 +204,7 @@ const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
     box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.22), 0 3px 9px rgba(60, 40, 45, 0.3);
 
     font-family: var(--font-letter);
-    font-size: 22px;
+    font-size: clamp(13px, 4.2vw, 19px);
     color: rgba(255, 255, 255, 0.9);
 
     transition: transform 500ms var(--ease), opacity 400ms var(--ease);
@@ -298,7 +315,7 @@ const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
   }
 
   .letter.is-open .seal {
-    transform: scale(1.5) rotate(-14deg);
+    transform: translate(-50%, -50%) scale(1.5) rotate(-14deg);
     opacity: 0;
   }
 

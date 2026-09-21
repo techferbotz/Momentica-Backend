@@ -1,0 +1,65 @@
+---
+import RenderRoute from '../../../components/RenderRoute.astro';
+import { FIXTURES, fixturePayload, type RenderMode } from '../../../lib/fixtures';
+
+/**
+ * The fixture harness: /states/{templateId}/{fixture}[?mode=]
+ *
+ * Six templates times roughly eight meaningful states is around forty
+ * renderings that cannot be checked by eye one at a time. This puts each one a
+ * URL away, driven by committed JSON rather than by whatever the live sample
+ * data happens to be — the sample only ever exercises ONE of the five occasion
+ * palettes, so without this most of the template is never actually looked at.
+ *
+ * Off unless ENABLE_FIXTURES=1, so it is opt-in per environment rather than
+ * something that quietly ships. Never indexed, never cached.
+ */
+const enabled = process.env.ENABLE_FIXTURES === '1';
+
+const template = Astro.params.template ?? '';
+const fixture = Astro.params.fixture ?? '';
+const mode = (Astro.url.searchParams.get('mode') ?? 'published') as RenderMode;
+
+const outcome = enabled ? fixturePayload(template, fixture, mode) : undefined;
+
+if (!enabled || !outcome) {
+  Astro.response.status = 404;
+}
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+---
+
+{
+  !enabled ? (
+    <html lang="en">
+      <head><meta name="robots" content="noindex, nofollow" /><title>Not found</title></head>
+      <body><p style="font:14px system-ui;padding:24px">Fixtures are disabled. Set ENABLE_FIXTURES=1.</p></body>
+    </html>
+  ) : !outcome ? (
+    <html lang="en">
+      <head><meta name="robots" content="noindex, nofollow" /><title>Unknown fixture</title></head>
+      <body>
+        <div style="font:14px/1.6 system-ui;padding:24px;max-width:40rem">
+          <p><strong>No fixture “{fixture}” for “{template}”.</strong></p>
+          <p>Available:</p>
+          <ul>
+            {Object.entries(FIXTURES).map(([tpl, set]) => (
+              <li>
+                {tpl}
+                <ul>
+                  {Object.entries(set).map(([key, f]) => (
+                    <li><a href={`/states/${tpl}/${key}`}>{key}</a> — {f.label}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <p>Append <code>?mode=draft</code>, <code>?mode=preview</code> or <code>?mode=expired</code> to any of them.</p>
+        </div>
+      </body>
+    </html>
+  ) : (
+    <RenderRoute outcome={outcome} />
+  )
+}

@@ -1,0 +1,97 @@
+{
+  "thank-you": {
+    "label": "Thank you (the sample)",
+    "values": {
+      "recipientName": "Divya",
+      "senderName": "Nikhil",
+      "occasion": "thank_you",
+      "letter": "I do not think I ever said it properly, so here it is written down where you can keep it.",
+      "photo": null
+    }
+  },
+  "sorry": {
+    "label": "Sorry — the quiet palette",
+    "values": {
+      "recipientName": "Arjun",
+      "senderName": "Meera",
+      "occasion": "sorry",
+      "letter": "I have started this four times.\n\nWhat I keep coming back to is that you were right, and that I should have said so at the time instead of a week later. I am sorry.",
+      "photo": null
+    }
+  },
+  "congratulations": {
+    "label": "Congratulations — gold",
+    "values": {
+      "recipientName": "Priya",
+      "senderName": "The whole team",
+      "occasion": "congratulations",
+      "letter": "You did it.\n\nNobody here is surprised, which is its own kind of compliment. Go and enjoy it properly before you start worrying about what comes next.",
+      "photo": null
+    }
+  },
+  "good-luck": {
+    "label": "Good luck — green",
+    "values": {
+      "recipientName": "Kabir",
+      "senderName": "Amma",
+      "occasion": "good_luck",
+      "letter": "Tomorrow will be over before you know it.\n\nEat something first. Take the blue pen, it is the one that works.",
+      "photo": null
+    }
+  },
+  "thinking-of-you": {
+    "label": "Thinking of you — lavender",
+    "values": {
+      "recipientName": "Ravi",
+      "senderName": "Sana",
+      "occasion": "thinking_of_you",
+      "letter": "No occasion. I just thought of you this morning and decided that was reason enough.",
+      "photo": null
+    }
+  },
+  "longest": {
+    "label": "Maximum length — 1200 characters, the field cap",
+    "values": {
+      "recipientName": "Anjali",
+      "senderName": "Vikram",
+      "occasion": "thank_you",
+      "letter": "There is a version of this letter that is one line long, and it just says thank you. I tried that one first and it looked so small on the page that I started again.\n\nWhat I actually want to say is that the year I spent not knowing what I was doing would have been much worse without you in it. You never once made me feel like the questions were stupid, and you answered the same one three times in March without ever mentioning that you had already answered it.\n\nI have noticed that you do this for everyone. I do not think you know how unusual it is. People assume that kind of patience is a personality trait rather than a decision somebody makes every single day, and I wanted to name it before another year goes past and I forget to.\n\nSo: thank you. For the time, for the patience, for the three answers in March. I hope someone does the same for you, and I hope you let them.",
+      "photo": null
+    }
+  },
+  "with-photo": {
+    "label": "With a photo (optional field present)",
+    "values": {
+      "recipientName": "Leela",
+      "senderName": "Dad",
+      "occasion": "thinking_of_you",
+      "letter": "Found this while clearing out the cupboard. You were three, and absolutely furious about the hat.",
+      "photo": {
+        "full": "/fixtures/photo-4x5.webp",
+        "thumb": "/fixtures/photo-4x5.webp",
+        "width": 1080,
+        "height": 1350
+      }
+    }
+  },
+  "photo-deleted": {
+    "label": "Photo deleted after publishing (resolves to null)",
+    "values": {
+      "recipientName": "Leela",
+      "senderName": "Dad",
+      "occasion": "thinking_of_you",
+      "letter": "Found this while clearing out the cupboard. You were three, and absolutely furious about the hat.",
+      "photo": null
+    }
+  },
+  "shortest": {
+    "label": "Shortest plausible letter",
+    "values": {
+      "recipientName": "Jo",
+      "senderName": "M",
+      "occasion": "thank_you",
+      "letter": "Thank you.",
+      "photo": null
+    }
+  }
+}

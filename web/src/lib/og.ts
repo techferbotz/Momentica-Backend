@@ -42,10 +42,20 @@ export function absolutize(url: string | null | undefined): string | null {
  * the recipient's name already interpolated, so the renderer places copy and
  * never composes it.
  */
-export function openGraphFor(code: string, payload: RenderPayload, fallbackImage?: string): OpenGraph {
-  // A moment shared with no preview card at all is a worse outcome than a
-  // generic one, so fall back to the template's own still.
-  const imageUrl = absolutize(payload.og.imageUrl) ?? absolutize(fallbackImage);
+export function openGraphFor(code: string, payload: RenderPayload, ogCard?: string): OpenGraph {
+  const fromApi = absolutize(payload.og.imageUrl);
+
+  // Which image belongs on the link card depends on whose it is.
+  //
+  // A creator's own photo always wins — it is the point of the moment. But for
+  // previews the API points at the template's CAROUSEL still, which is a
+  // phone-shaped WebP built for the app's detail screen: wrong aspect for a
+  // 1.91:1 card, and a format WhatsApp's crawler has never handled reliably.
+  // For those we prefer the purpose-built 1200x630 JPEG instead.
+  //
+  // A moment shared with no card at all is still the worst outcome, so this
+  // falls through to whatever it can get.
+  const imageUrl = fromApi && !isOurStill(fromApi) ? fromApi : (absolutize(ogCard) ?? fromApi);
 
   return {
     title: payload.og.title,
