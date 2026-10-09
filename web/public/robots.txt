@@ -1,0 +1,17 @@
+# Momentica
+#
+# The shopfront is meant to be found. Everything else is somebody's private
+# moment: privacy for a published link is nothing but the unguessability of
+# eight base62 characters, so a search engine indexing one would defeat it.
+# Every such page also sends `noindex` in its own head — this file is the
+# belt to that pair of braces, and it stops the crawl before it costs a render.
+
+User-agent: *
+Allow: /$
+Allow: /templates/
+Disallow: /states/
+Disallow: /pv_
+Disallow: /d_
+Disallow: /
+
+Sitemap: https://momentica.ferbotz.com/sitemap.xml

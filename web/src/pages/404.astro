@@ -1,0 +1,28 @@
+---
+import Stage from '../components/Stage.astro';
+import GonePage from '../components/GonePage.astro';
+import { PUBLIC_ORIGIN } from '../lib/og';
+
+/**
+ * Astro's fallback for anything no route matched.
+ *
+ * Single-segment paths all land on `[code].astro` and get the branded dead-link
+ * page, so what reaches here is deeper: /a/b/c, a stray asset path, a crawler
+ * guessing. Without this file those got Astro's unstyled "404: Not Found",
+ * which is a strange thing for someone to meet on a link a friend sent them.
+ */
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Content-Type-Options', 'nosniff');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+
+const og = {
+  title: 'Momentica',
+  description: 'Moments, made personal.',
+  imageUrl: null,
+  pageUrl: `${PUBLIC_ORIGIN}/`,
+};
+---
+
+<Stage og={og} robots="noindex, nofollow">
+  <GonePage reason="unknown" />
+</Stage>

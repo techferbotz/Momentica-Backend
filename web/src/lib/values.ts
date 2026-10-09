@@ -53,6 +53,16 @@ export class Values {
       : fallback;
   }
 
+  /**
+   * `color` arrives as lowercase "#rrggbb". Validated rather than trusted —
+   * these values land in inline styles, so anything that is not exactly a hex
+   * colour is dropped rather than interpolated into CSS.
+   */
+  color(key: string, fallback?: string): string | undefined {
+    const value = this.raw[key];
+    return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
+  }
+
   /** `date` is "YYYY-MM-DD"; `dateTime` is ISO 8601 with an offset. */
   date(key: string): Date | undefined {
     const value = this.raw[key];

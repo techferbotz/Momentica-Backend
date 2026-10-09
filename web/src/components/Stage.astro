@@ -45,6 +45,12 @@ const { og, robots, themeColor = '#efc9d2', bodyClass = '' } = Astro.props;
 
     <link rel="canonical" href={og.pageUrl} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/* Browsers ask for /favicon.ico whether or not it is linked; without the
+         file each request cost a server-rendered 404. */}
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    {/* These links get opened on phones and kept — without this, adding one to
+         the home screen takes a screenshot of the page instead. */}
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body class={bodyClass}>
     <slot />

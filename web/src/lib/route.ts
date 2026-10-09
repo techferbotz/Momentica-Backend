@@ -1,4 +1,5 @@
 import { fetchRender } from './render';
+import { logger, safeCode } from './log';
 import { manifestFor } from '../templates/manifest';
 import type { RouteState } from './types';
 
@@ -7,6 +8,8 @@ export interface RouteOutcome {
   status: number;
   cacheControl: string;
   robots: string;
+  /** Set only on 503, so a client that could sensibly retry knows when to. */
+  retryAfterSeconds?: number;
 }
 
 /**
@@ -22,13 +25,15 @@ export async function resolveRoute(code: string): Promise<RouteOutcome> {
   const state = await fetchRender(code);
 
   if (state.kind === 'gone') {
+    const unavailable = state.reason === 'unavailable';
     return {
       state,
       // The API being down is not the link's fault, and a 404 would tell a
       // crawler this moment no longer exists.
-      status: state.reason === 'unavailable' ? 503 : 404,
+      status: unavailable ? 503 : 404,
       cacheControl: 'no-store',
       robots: 'noindex, nofollow',
+      ...(unavailable ? { retryAfterSeconds: 30 } : {}),
     };
   }
 
@@ -37,6 +42,15 @@ export async function resolveRoute(code: string): Promise<RouteOutcome> {
   // Better a branded unavailable page with an honest 404 than a crash or a
   // blank 200 that a crawler will happily cache as the moment itself.
   if (!manifestFor(state.payload.templateId)) {
+    // The feed is advertising a template this renderer cannot draw. Nobody
+    // finds out from the recipient's side — they just see "not available" —
+    // so this is the only place it surfaces. Error level on purpose: it means
+    // `live` was flipped ahead of a deploy.
+    logger.error('backend resolved a template this renderer has not built', {
+      code: safeCode(code),
+      templateId: state.payload.templateId,
+      mode: state.payload.meta.mode,
+    });
     return {
       state: { kind: 'gone', code, reason: 'unknown' },
       status: 404,

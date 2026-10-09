@@ -22,6 +22,11 @@ Astro.response.headers.set('Cache-Control', outcome.cacheControl);
 // just-published link as dead for five minutes.
 Astro.response.headers.set('X-Content-Type-Options', 'nosniff');
 Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+// Only present on a 503: the API was unreachable, which is worth retrying.
+// A 404 is not, and a Retry-After there would invite crawlers to keep asking.
+if (outcome.retryAfterSeconds) {
+  Astro.response.headers.set('Retry-After', String(outcome.retryAfterSeconds));
+}
 ---
 
 <RenderRoute outcome={outcome} />

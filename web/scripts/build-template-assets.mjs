@@ -24,7 +24,7 @@
  * authoring step whose output is committed; it is not part of the web build,
  * which is why the renderer's image never needs sharp.
  */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
@@ -252,5 +252,50 @@ const photoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1
 const photoInfo = await sharp(Buffer.from(photoSvg)).webp({ quality: 78 }).toFile(`${fixturesDir}/photo-4x5.webp`);
 console.log(`  fixtures/photo-4x5.webp  ${photoInfo.width}x${photoInfo.height}  ${(photoInfo.size / 1024).toFixed(1)} KB`);
 count += 1;
+
+/**
+ * Favicons.
+ *
+ * `favicon.ico` exists because browsers ask for it whether or not the page
+ * links one, and every unanswered request used to cost a server-rendered 404.
+ * It is a real ICO: the format permits a PNG payload verbatim, so this is a
+ * 6-byte directory header plus one 16-byte entry wrapped around a 32x32 PNG.
+ *
+ * `apple-touch-icon.png` matters more than it looks — these links are opened on
+ * phones and kept, and "add to home screen" otherwise screenshots the page.
+ */
+const markSvg = (size) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="${P.stageBottom}"/>
+  <path d="M6 11.5h20v13a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 6 24.5z" fill="${P.paper}"/>
+  <path d="M6 11.5 16 19l10-7.5" fill="none" stroke="${P.accent}" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="16" cy="10" r="4.5" fill="${P.accentDeep}"/>
+</svg>`;
+
+const publicDir = fileURLToPath(new URL('../public', import.meta.url));
+
+const icoPng = await sharp(Buffer.from(markSvg(32))).resize(32, 32).png().toBuffer();
+const header = Buffer.alloc(6);
+header.writeUInt16LE(0, 0); // reserved
+header.writeUInt16LE(1, 2); // type: icon
+header.writeUInt16LE(1, 4); // one image
+const entry = Buffer.alloc(16);
+entry[0] = 32; // width
+entry[1] = 32; // height
+entry[2] = 0; // palette: none
+entry[3] = 0; // reserved
+entry.writeUInt16LE(1, 4); // colour planes
+entry.writeUInt16LE(32, 6); // bits per pixel
+entry.writeUInt32LE(icoPng.length, 8);
+entry.writeUInt32LE(header.length + entry.length, 12); // offset to the payload
+writeFileSync(`${publicDir}/favicon.ico`, Buffer.concat([header, entry, icoPng]));
+console.log(`  favicon.ico              32x32  ${((header.length + entry.length + icoPng.length) / 1024).toFixed(1)} KB`);
+
+const touch = await sharp(Buffer.from(markSvg(180)))
+  .resize(180, 180)
+  .flatten({ background: P.stageBottom })
+  .png()
+  .toFile(`${publicDir}/apple-touch-icon.png`);
+console.log(`  apple-touch-icon.png     ${touch.width}x${touch.height}  ${(touch.size / 1024).toFixed(1)} KB`);
+count += 2;
 
 console.log(`\n✓ ${count} asset(s) written under web/public/\n`);

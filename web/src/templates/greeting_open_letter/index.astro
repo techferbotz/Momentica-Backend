@@ -25,9 +25,12 @@ const letter = v.text('letter');
 const occasion = v.choice('occasion', OCCASIONS, 'thank_you');
 const photo = v.image('photo');
 
-// The seal carries the sender's initial. Falls back to a plain mark rather
-// than an empty circle when the name is absent.
-const initial = sender ? sender.trim().charAt(0).toUpperCase() : '';
+// The seal carries the sender's initial.
+//
+// Spread rather than charAt(0): charAt returns one UTF-16 code unit, so a name
+// beginning with an emoji ("😀 Dad") yielded half a surrogate pair and stamped
+// a replacement character into the wax.
+const initial = sender ? ([...sender.trim()][0] ?? '').toUpperCase() : '';
 ---
 
 {/* Set before paint so the envelope never flashes open. Without JavaScript the

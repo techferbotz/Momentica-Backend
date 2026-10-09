@@ -1,0 +1,46 @@
+---
+import Stage from '../components/Stage.astro';
+import NoticePage from '../components/NoticePage.astro';
+import { logger } from '../lib/log';
+import { PUBLIC_ORIGIN } from '../lib/og';
+
+interface Props {
+  error?: unknown;
+}
+
+/**
+ * Shown when something threw while rendering — a template bug, a payload shape
+ * nothing expected. Without this file the recipient gets Astro's raw error
+ * page, which on a link someone sent as a gift is about the worst possible
+ * outcome: a stack trace where a birthday was meant to be.
+ *
+ * This is also the only place a render-time throw gets recorded at all.
+ */
+const { error } = Astro.props;
+
+logger.error('unhandled error while rendering', {
+  path: Astro.url.pathname,
+  error: error instanceof Error ? error.message : String(error ?? 'unknown'),
+  stack: error instanceof Error ? error.stack?.split('\n').slice(0, 4).join(' | ') : undefined,
+});
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Content-Type-Options', 'nosniff');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+Astro.response.headers.set('Retry-After', '30');
+
+const og = {
+  title: 'Momentica',
+  description: 'Moments, made personal.',
+  imageUrl: null,
+  pageUrl: `${PUBLIC_ORIGIN}/`,
+};
+---
+
+<Stage og={og} robots="noindex, nofollow">
+  <NoticePage
+    title="We can’t show this right now"
+    body="Something went wrong on our side. The link itself is almost certainly fine."
+    hint="Try again in a moment."
+  />
+</Stage>
